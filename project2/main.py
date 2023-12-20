@@ -6,9 +6,10 @@ from redisdb import *
 from scheldule import *
 import aiocron
 import random
-
+import logging
 # Запуск бота
 async def main():
+    logging.basicConfig(logging.DEBUG)
     bot = Bot(token=config.bot_token.get_secret_value() , parse_mode='HTML')
     dp = Dispatcher()
     dp.include_router(router)
@@ -17,10 +18,7 @@ async def main():
     # dp.include_router(questions.router)
     # dp.include_router(different_types.router)
 
-    # Запускаем бота и пропускаем все накопленные входящие
-    # Да, этот метод можно вызвать даже если у вас поллинг
-    await bot.delete_webhook(drop_pending_updates=True)
-    await dp.start_polling(bot)
+    
 
 
     chat_id = 921953226#личный ччат со мной можно заменить на свой
@@ -76,7 +74,12 @@ async def main():
         pair_text += "\n\n[DOING LINK](MadeByZealot)"
 
         await bot.send_message(chat_id, pair_text)
-
-
+        
+    # Запускаем бота и пропускаем все накопленные входящие
+    # Да, этот метод можно вызвать даже если у вас поллинг
+    
+    await bot.delete_webhook(drop_pending_updates=True)
+    await dp.start_polling(bot)
+    
 if __name__ == "__main__":
     asyncio.run(main())
