@@ -15,7 +15,10 @@ awk -F ',' 'NR>1 {split($1, parts, "_"); country=tolower(parts[1]); hotel_count[
 # Шаг 5: Вычисление среднего балла cleanliness по стране для отелей Holiday Inn и Hilton
 awk -F ',' 'NR>1 && $13!=-1 {split($1, parts, "_"); country=tolower(parts[1]); if (country == "holidayinn" || country == "hilton") {sum[country]+=$13; count[country]++}} END {for (c in sum) if (count[c]>0) print "CLEANLINESS", c, sum[c]/count[c]}' "$1"
 
-# Шаг 6: Фильтрация данных для линейной регрессии и сохранение во временный файл
+# Шаг 6: Вывод значений cleanliness для каждой страны
+awk -F ',' 'NR>1 && $13!=-1 {split($1, parts, "_"); country=tolower(parts[1]); print "CLEANLINESS", country, $13}' "$1"
+
+# Шаг 7: Фильтрация данных для линейной регрессии и сохранение во временный файл
 awk -F ',' 'NR>1 && $13!=-1 && $18!=-1 {print $18, $13}' "$1" > "$temp_file"
 
 # Проверка, что временный файл содержит данные
@@ -24,7 +27,7 @@ if [ ! -s "$temp_file" ]; then
     exit 1
 fi
 
-# Шаг 7: Запись скрипта gnuplot
+# Шаг 8: Запись скрипта gnuplot
 cat > "$gnuplot_script" <<EOL
 set term png
 set output "/tmp/linear_regression_plot.png"
