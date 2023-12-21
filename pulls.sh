@@ -39,7 +39,7 @@ while true; do
   pulls_info=$(get_pulls_info "$page")
 
   # Проверяем, что пользователь существует
-  if [ "$(echo "$pulls_info" | jq '.[0].message')" == "Not Found" ]; then
+  if [ "$(echo "$pulls_info" | jq '. | length')" -eq 0 ]; then
     echo "Пользователь $user не найден на GitHub."
     exit 1
   fi
