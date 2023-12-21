@@ -10,12 +10,11 @@ fi
 user=$1
 repo="datamove/linux-git2"
 api_url="https://api.github.com/repos/$repo/pulls"
-token_file="/home/Ega2901/public_repo_token"
+token_file="/home/users/xxxx/github_token" # Поменяйте на ваш путь к токену
 cache_dir="$HOME/.github_api_cache"
 cache_file_pulls="$cache_dir/pulls_cache.json"
 cache_file_earliest="$cache_dir/earliest_cache.json"
 cache_file_merged="$cache_dir/merged_cache.json"
-log_file="$cache_dir/checker_log.txt"
 
 # Создать каталог для кэша, если его нет
 mkdir -p "$cache_dir"
@@ -60,13 +59,7 @@ function get_merged_flag {
   github_api_request "$url" "$token" "$cache_file_merged" | jq -r '.[0].merged // false' | awk '{print "MERGED", $1 ? 1 : 0}'
 }
 
-# Вывод результатов в файл лога
-echo "PULLS $(get_pulls_count)" >> "$log_file"
-echo "EARLIEST $(get_earliest_pull)" >> "$log_file"
-echo "$(get_merged_flag)" >> "$log_file"
-
-# Вывод результатов на экран
-cat "$log_file"
-
-# Передача кода завершения в чекер
-exit 0
+# Вывод результатов
+echo "PULLS $(get_pulls_count)"
+echo "EARLIEST $(get_earliest_pull)"
+echo "$(get_merged_flag)"
