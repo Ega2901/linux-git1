@@ -22,7 +22,8 @@ fi
 gnuplot -e "f(x) = a*x + b; fit f(x) '$gnuplot_data' via a, b; \
             set xlabel 'Overall Rating'; set ylabel 'Cleanliness'; \
             set title 'Linear Regression: Cleanliness vs Overall Rating'; \
-            plot '$gnuplot_data' title 'Data', f(x) title 'Linear Regression' with lines"
+            plot '$gnuplot_data' title 'Data', f(x) title 'Linear Regression' with lines; \
+            show variables; show fit"
 
 # Remove temporary files
 rm "$gnuplot_data"
