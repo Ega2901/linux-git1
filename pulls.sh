@@ -9,9 +9,20 @@ fi
 # Получаем аргумент (ник пользователя)
 user=$1
 
-# Директория для кэширования ответов API
-cache_dir="/home/Ega2901/github_api_cache"
+# Директория для кэширования ответов API GitHub
+cache_dir="/home/ubuntu/aimasters-checkers/hws/linux4/Ega2901/43/github_api_cache"
 mkdir -p "$cache_dir"
+
+# Директория для записи результатов
+result_dir="/home/ubuntu/aimasters-checkers/hws/linux4/Ega2901/43/results"
+mkdir -p "$result_dir"
+
+# Директория для клонирования репозитория
+repo_dir="/home/ubuntu/aimasters-checkers/hws/linux4/Ega2901/43/linux-git1"
+mkdir -p "$repo_dir"
+
+# Устанавливаем правильного владельца для директорий
+chown -R ubuntu:ubuntu "/home/ubuntu/aimasters-checkers/hws/linux4/Ega2901/43"
 
 # Функция для получения информации о пулл-реквестах из API GitHub
 function get_pulls_info() {
@@ -27,6 +38,17 @@ function get_pulls_info() {
     cat "$cache_file"
   fi
 }
+
+# Клонируем репозиторий, если еще не склонирован
+if [ ! -d "$repo_dir/.git" ]; then
+  git clone https://github.com/datamove/linux-git2.git "$repo_dir"
+fi
+
+# Переходим в директорию с репозиторием
+cd "$repo_dir" || exit 1
+
+# Обновляем репозиторий
+git pull origin main
 
 # Инициализируем переменные
 total_pulls_count=0
@@ -68,14 +90,10 @@ while true; do
   page=$((page + 1))
 done
 
-# Выводим количество пулл-реквестов
+# Выводим результаты через стандартный вывод
 echo "PULLS $total_pulls_count"
-
-# Выводим номер самого раннего пулл-реквеста
 if [ -n "$earliest_pull_number" ]; then
   echo "EARLIEST $earliest_pull_number"
-
-  # Выводим бинарный флаг MERGED
   if [ "$earliest_pull_merged" == "true" ]; then
     echo "MERGED 1"
   else
@@ -84,4 +102,4 @@ if [ -n "$earliest_pull_number" ]; then
 else
   echo "EARLIEST N/A"
   echo "MERGED 0"
-fi
+fi > "$result_dir/results.log"
