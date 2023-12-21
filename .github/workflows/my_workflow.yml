@@ -52,7 +52,7 @@ jobs:
         with:
           builder: ${{ steps.buildx.outputs.name }}
           context: ./project2
-          file: ./Dockerfile
+          file: /project2/Dockerfile 
           tags: ${{ env.IMAGE_TAG }}
           push: true
           cache-from: type=registry,ref=${{ env.CACHE_TAG }}
