@@ -38,5 +38,5 @@ plot "$temp_file" using 1:2 title "Точки данных" with points pointtyp
      f(x) title "Линейная регрессия"
 EOL
 
-# Запуск gnuplotе
-gnuplot "$gnuplot_script"
+# Запуск gnuplot с игнорированием ошибок при вычислении коэффициентов линейной регрессии
+gnuplot "$gnuplot_script" 2>/dev/null || true
