@@ -22,7 +22,7 @@ hotels_by_country=$(awk -F',' '{ if ($1 != -1) { country=tolower($7); count[coun
 echo "$hotels_by_country"
 
 # Task 3: Average cleanliness score per country for Holiday Inn vs. Hilton
-cleanliness_avg=$(awk -F',' '{ if ($1 != -1 && $12 != -1) { country=tolower($7); cleanliness=$12; hotel_network=tolower($2); sum[country, hotel_network] += cleanliness; count[country, hotel_network]++ } } END { for (c in count) { split(c, arr, SUBSEP); country = arr[1]; network = arr[2]; avg = sum[c] / count[c]; if (count[country, "holiday inn"] > 0 && count[country, "hilton"] > 0) print "CLEANLINESS " country " " avg " " count[country, "holiday inn"] " " count[country, "hilton"]; } }' $dataset_file)
+cleanliness_avg=$(awk -F',' '{ if ($1 != -1 && $12 != -1 && $12 != 0) { country=tolower($7); cleanliness=$12; hotel_network=tolower($2); sum[country, hotel_network] += cleanliness; count[country, hotel_network]++ } } END { for (c in count) { split(c, arr, SUBSEP); country = arr[1]; network = arr[2]; avg = sum[c] / count[c]; if (count[country, "holiday inn"] > 0 && count[country, "hilton"] > 0) print "CLEANLINESS " country " " avg " " count[country, "holiday inn"] " " count[country, "hilton"]; } }' $dataset_file)
 echo "$cleanliness_avg"
 
 # Task 4: Use gnuplot to calculate linear regression coefficients for cleanliness vs overall_ratingsource
@@ -38,7 +38,7 @@ BEGIN {
 }
 
 {
-    if ($12 != -1) {
+    if ($12 != -1 && $12 != 0) {
         clean_sum += $12;
         clean_count++;
     }
