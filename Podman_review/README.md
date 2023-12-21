@@ -484,7 +484,7 @@ podman run -it mypythonapp /bin/sh
 ## Podman Desctop
 Для удобства и визуализации podman, по аналогии с Docker Desktop существует Podman Desctop имеющая все основные функции podman и предоставляющая инструменты для администрирования образов и контейнеров используемых в системе.
 
-![](./content/containers.mp4)
+![](./content/containers.mov)
 
 ### Участие в разработке
 
