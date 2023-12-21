@@ -47,7 +47,7 @@ async def send_message_to_subscribers():
     subscribers = await load_list_from_redis(redis_url, key = 'chats')
     for subscriber in subscribers:
         await bot.send_message(subscriber, text)
-
+#разделение по парам или тройкам
 async def create_pairs():
     yes_users = await load_dict_from_redis(redis_url, key = chat_id)
     if not yes_users:
