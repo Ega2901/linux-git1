@@ -2,78 +2,71 @@
 
 # Проверка наличия аргумента
 if [ -z "$1" ]; then
-  echo "Укажите ник пользователя на Github в качестве аргумента."
-  exit 1
+    echo "Usage: $0 <github_username>"
+    exit 1
 fi
 
 # Переменные
-user=$1
-repo="datamove/linux-git2"
-api_url="https://api.github.com/repos/$repo/pulls"
-token_file="/home/Ega2901/public_repo_token" # Поменяйте на ваш путь к токену
-cache_dir="$HOME/.github_api_cache"
-cache_file_pulls="$cache_dir/pulls_cache.json"
-cache_file_earliest="$cache_dir/earliest_cache.json"
-cache_file_merged="$cache_dir/merged_cache.json"
+github_username=$1
+repo_owner="datamove"
+repo_name="linux-git2"
+cache_dir="$HOME/.github_cache"
+api_url="https://api.github.com/repos/$repo_owner/$repo_name/pulls?state=all&per_page=100"
+merged_flag=0
+earliest_pull_number=""
 
-# Создать каталог для кэша, если его нет
+# Создание каталога для кэша, если не существует
 mkdir -p "$cache_dir"
 
-# Функция для выполнения запроса к Github API и кэширования результата
-function github_api_request {
-  local url=$1
-  local token=$2
-  local cache_file=$3
+# Функция для получения данных через API с учетом кэша
+get_data() {
+    local url=$1
+    local cache_file="$cache_dir/$(echo -n "$url" | md5sum | cut -d ' ' -f 1)"
 
-  # Проверяем, есть ли кэш и он не устарел (например, не старше 1 часа)
-  if [ -f "$cache_file" ] && [ $(find "$cache_file" -mmin +60) ]; then
-    cat "$cache_file"
-  else
-    if [ -z "$token" ]; then
-      curl -s "$url" > "$cache_file"
+    # Используем кэш, если файл существует и не старше 1 часа
+    if [ -f "$cache_file" ] && [ $(($(date +%s) - $(stat -c %Y "$cache_file"))) -lt 3600 ]; then
+        cat "$cache_file"
     else
-      curl -s -H "Authorization: token $token" "$url" > "$cache_file"
+        curl -s "$url" > "$cache_file"
+        cat "$cache_file"
     fi
-    cat "$cache_file"
-  fi
 }
 
-# Функция для получения числа пулл-реквестов
-function get_pulls_count {
-  local url="$api_url?state=all&per_page=100&user=$user"
-  local token=$(cat "$token_file" 2>/dev/null)
-  github_api_request "$url" "$token" "$cache_file_pulls" | jq length
+# Функция для обработки пулл-реквестов
+process_pulls() {
+    local pulls_url=$api_url
+
+    while [ "$pulls_url" != "null" ]; do
+        response=$(get_data "$pulls_url")
+        pulls_url=$(echo "$response" | jq -r '.next')
+
+        # Обработка каждого пулл-реквеста
+        pulls=$(echo "$response" | jq -r '.[] | select(.user.login == "'"$github_username"'")')
+        for pull in $pulls; do
+            pull_number=$(echo "$pull" | jq -r '.number')
+            merged=$(echo "$pull" | jq -r '.merged')
+
+            # Первый пулл-реквест
+            if [ -z "$earliest_pull_number" ]; then
+                earliest_pull_number=$pull_number
+            fi
+
+            # Проверка смерженности первого пулл-реквеста
+            if [ "$pull_number" -eq "$earliest_pull_number" ]; then
+                if [ "$merged" == "true" ]; then
+                    merged_flag=1
+                fi
+            fi
+        done
+    done
+
+    echo "PULLS $pulls_count"
+    echo "EARLIEST $earliest_pull_number"
+    echo "MERGED $merged_flag"
 }
 
-# Функция для получения информации о самом раннем пулл-реквесте
-function get_earliest_pull {
-  local url="$api_url?state=all&per_page=1&user=$user"
-  local token=$(cat "$token_file" 2>/dev/null)
-  github_api_request "$url" "$token" "$cache_file_earliest" | jq '.[0].number // empty'
-}
-
-# Функция для определения флага MERGED
-function get_merged_flag {
-  local url="$api_url?state=all&per_page=1&user=$user"
-  local token=$(cat "$token_file" 2>/dev/null)
-  local merged_status=$(github_api_request "$url" "$token" "$cache_file_merged" | jq -r '.[0].merged // false')
-
-  if [ "$merged_status" == "true" ]; then
-    echo "MERGED 1"
-  else
-    echo "MERGED 0"
-  fi
-}
-
-# Задержка между запросами
-function sleep_between_requests {
-  sleep 1
-}
+# Получение данных о пулл-реквестах
+pulls_data=$(process_pulls)
 
 # Вывод результатов
-echo "PULLS $(get_pulls_count)"
-echo "EARLIEST $(get_earliest_pull)"
-echo "$(get_merged_flag)"
-
-# Передача кода завершения в чекер
-exit 0
+echo "$pulls_data"
