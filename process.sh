@@ -25,6 +25,13 @@ if [ ! -s "$gnuplot_data" ]; then
 fi
 
 # Calculate linear regression coefficients
+# Check if there are enough data points for regression
+num_data_points=$(wc -l "$gnuplot_data" | awk '{print $1}')
+if [ "$num_data_points" -le 1 ]; then
+    echo "Error: Not enough valid data points for linear regression."
+    exit 1
+fi
+
 # Calculate mean of x and y
 mean_x=$(awk '{sum_x += $1} END {printf "%.6f", sum_x / NR}' "$gnuplot_data")
 mean_y=$(awk '{sum_y += $2} END {printf "%.6f", sum_y / NR}' "$gnuplot_data")
@@ -52,7 +59,7 @@ gnuplot -e "f(x) = $slope*x + $intercept; \
 rm "$gnuplot_data"
 
 # Путь к файлу датасета
-dataset="/home/users/datasets/hotels.csv"
+dataset="$1"
 
 # Пункт 1: Средний рейтинг (overall_ratingsource)
 rating_avg=$(awk -F, 'NR > 1 { sum += $17 } END { printf "RATING_AVG %.2f\n", sum / (NR - 1) }' "$dataset")
