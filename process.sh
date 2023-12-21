@@ -29,6 +29,12 @@ fi
 mean_x=$(awk '{sum_x += $1} END {printf "%.6f", sum_x / NR}' "$gnuplot_data")
 mean_y=$(awk '{sum_y += $2} END {printf "%.6f", sum_y / NR}' "$gnuplot_data")
 
+# Check if mean_x is 0 (division by zero will occur)
+if [ "$(awk 'BEGIN{print ('"$mean_x"' == 0)}')" -eq 1 ]; then
+    echo "Error: Division by zero. Check the dataset for valid values."
+    exit 1
+fi
+
 # Calculate slope (a) and intercept (b)
 slope=$(awk '{sum_xy += ($1 - '"$mean_x"') * ($2 - '"$mean_y"')} \
               {sum_xx += ($1 - '"$mean_x"') * ($1 - '"$mean_x"')} \
