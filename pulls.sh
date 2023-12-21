@@ -35,10 +35,11 @@ get_data() {
 # Функция для обработки пулл-реквестов
 process_pulls() {
     local pulls_url=$api_url
+    local merged_flag=0
+    local earliest_pull_number=""
 
     while [ "$pulls_url" != "null" ]; do
         response=$(get_data "$pulls_url")
-        pulls_url=$(echo "$response" | jq -r '.next')
 
         # Обработка каждого пулл-реквеста
         pulls=$(echo "$response" | jq -r '.[] | select(.user.login == "'"$github_username"'")')
@@ -58,12 +59,16 @@ process_pulls() {
                 fi
             fi
         done
+
+        # Получаем URL для следующей страницы, если есть
+        pulls_url=$(echo "$response" | jq -r '.next')
     done
 
     echo "PULLS $pulls_count"
     echo "EARLIEST $earliest_pull_number"
     echo "MERGED $merged_flag"
 }
+
 
 # Получение данных о пулл-реквестах
 pulls_data=$(process_pulls)
