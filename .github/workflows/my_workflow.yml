@@ -26,7 +26,7 @@ jobs:
         password: ${{ secrets.DOCKER_PASSWORD }}
 
     - name: Push Docker image (if needed)
-      run: docker push your_bot_image
+      run: docker push ega2901_bot
 
     - name: Redeploy Docker container
       run: |
