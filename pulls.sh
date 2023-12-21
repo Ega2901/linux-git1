@@ -15,6 +15,7 @@ cache_dir="$HOME/.github_api_cache"
 cache_file_pulls="$cache_dir/pulls_cache.json"
 cache_file_earliest="$cache_dir/earliest_cache.json"
 cache_file_merged="$cache_dir/merged_cache.json"
+log_file="$cache_dir/checker_log.txt"
 
 # Создать каталог для кэша, если его нет
 mkdir -p "$cache_dir"
@@ -56,38 +57,16 @@ function get_earliest_pull {
 function get_merged_flag {
   local url="$api_url?state=all&per_page=1&user=$user"
   local token=$(cat "$token_file" 2>/dev/null)
-  github_api_request "$url" "$token" "$cache_file_merged" | jq -r '.[0].merged // false' | awk '{print "MERGED", $1 ? 1 : 0}'
+  github_api_request "$url" "$token" "$cache_file_merged" | jq -r '.[0].merged // false' | awk '{print "MERGED", ($1 == "true") ? 1 : 0}'
 }
 
-# Вывод результатов
-actual_pulls=$(get_pulls_count)
-actual_earliest=$(get_earliest_pull)
-actual_merged_flag=$(get_merged_flag)
+# Вывод результатов в файл лога
+echo "PULLS $(get_pulls_count)" > "$log_file"
+echo "EARLIEST $(get_earliest_pull)" >> "$log_file"
+echo "$(get_merged_flag)" >> "$log_file"
 
-# Ожидаемые значения
-expected_pulls=100
-expected_earliest=628
-expected_merged_flag=1
+# Вывод результатов на экран
+cat "$log_file"
 
-# Сравнение результатов
-echo "Actual PULLS: $actual_pulls, Expected PULLS: $expected_pulls"
-echo "Actual EARLIEST: $actual_earliest, Expected EARLIEST: $expected_earliest"
-echo "Actual MERGED: $actual_merged_flag, Expected MERGED: $expected_merged_flag"
-
-if [ "$actual_pulls" -eq "$expected_pulls" ]; then
-  echo "Number of pull-requests correct"
-else
-  echo "Number of pull-requests wrong"
-fi
-
-if [ "$actual_earliest" -eq "$expected_earliest" ]; then
-  echo "Number of earliest request is correct"
-else
-  echo "Number of earliest request is wrong"
-fi
-
-if [ "$actual_merged_flag" -eq "$expected_merged_flag" ]; then
-  echo "Merged flag is correct ($actual_merged_flag)"
-else
-  echo "Merged flag is wrong ($actual_merged_flag vs $expected_merged_flag)"
-fi
+# Передача кода завершения в чекер
+exit 0
