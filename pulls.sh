@@ -60,6 +60,34 @@ function get_merged_flag {
 }
 
 # Вывод результатов
-echo "PULLS $(get_pulls_count)"
-echo "EARLIEST $(get_earliest_pull)"
-echo "$(get_merged_flag)"
+actual_pulls=$(get_pulls_count)
+actual_earliest=$(get_earliest_pull)
+actual_merged_flag=$(get_merged_flag)
+
+# Ожидаемые значения
+expected_pulls=100
+expected_earliest=628
+expected_merged_flag=1
+
+# Сравнение результатов
+echo "Actual PULLS: $actual_pulls, Expected PULLS: $expected_pulls"
+echo "Actual EARLIEST: $actual_earliest, Expected EARLIEST: $expected_earliest"
+echo "Actual MERGED: $actual_merged_flag, Expected MERGED: $expected_merged_flag"
+
+if [ "$actual_pulls" -eq "$expected_pulls" ]; then
+  echo "Number of pull-requests correct"
+else
+  echo "Number of pull-requests wrong"
+fi
+
+if [ "$actual_earliest" -eq "$expected_earliest" ]; then
+  echo "Number of earliest request is correct"
+else
+  echo "Number of earliest request is wrong"
+fi
+
+if [ "$actual_merged_flag" -eq "$expected_merged_flag" ]; then
+  echo "Merged flag is correct ($actual_merged_flag)"
+else
+  echo "Merged flag is wrong ($actual_merged_flag vs $expected_merged_flag)"
+fi
