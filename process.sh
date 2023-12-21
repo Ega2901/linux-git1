@@ -13,7 +13,7 @@ awk -F ',' 'NR>1 && $18!=-1 {sum+=$18; count++} END {if (count>0) print "RATING_
 awk -F ',' 'NR>1 {split($1, parts, "_"); country=tolower(parts[1]); hotel_count[country]++} END {for (c in hotel_count) print "HOTELNUMBER", c, hotel_count[c]}' "$1"
 
 # Шаг 5: Вычисление среднего балла cleanliness по стране для отелей Holiday Inn и Hilton
-awk -F ',' 'NR>1 && $13!=-1 {split($1, parts, "_"); country=tolower(parts[1]); if (country == "holiday" || country == "hilton") {sum[country]+=$13; count[country]++}} END {for (c in sum) if (count[c]>0) print "CLEANLINESS", c, sum[c]/count[c]}' "$1"
+awk -F ',' 'NR>1 && $13!=-1 {split($1, parts, "_"); country=tolower(parts[2]); if (country == "holiday" || country == "hilton") {sum[country]+=$13; count[country]++}} END {for (c in sum) if (count[c]>0) print "CLEANLINESS", c, sum[c]/count[c]}' "$1"
 
 # Шаг 6: Вывод значений cleanliness для каждой страны
 awk -F ',' 'NR>1 && $13!=-1 {split($1, parts, "_"); country=tolower(parts[1]); print "CLEANLINESS", country, $13}' "$1"
