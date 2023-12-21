@@ -29,7 +29,7 @@ echo "$cleanliness_by_country"
 
 # Extract relevant data for linear regression
 data_file=$(mktemp /tmp/linear_regression_data.XXXXXX)
-awk -F' ' '{print $2, $3}' <<< "$cleanliness_by_country" > "$data_file"
+awk -F' ' '{if ($2 != -1) print $2, $3}' <<< "$cleanliness_by_country" > "$data_file"
 
 # Check if the data file is not empty
 if [ ! -s "$data_file" ]; then
@@ -37,11 +37,14 @@ if [ ! -s "$data_file" ]; then
     exit 1
 fi
 
-# Calculate linear regression coefficients using gnuplot
+# Calculate linear regression coefficients using awk
+a=$(awk -F' ' '{sum_x += $1; sum_y += $2; sum_xy += $1 * $2; sum_xx += $1 * $1} END {printf "%.6f", (NR * sum_xy - sum_x * sum_y) / (NR * sum_xx - sum_x * sum_x)}' "$data_file")
+b=$(awk -v a="$a" '{sum_x += $1; sum_y += $2} END {printf "%.6f", (sum_y - a * sum_x) / NR}' "$data_file")
+
+# Plot linear regression
 gnuplot_script=$(mktemp /tmp/gnuplot_script.XXXXXX)
 cat <<EOL >"$gnuplot_script"
-f(x) = a*x + b
-fit f(x) "$data_file" using 1:2 via a, b
+f(x) = $a*x + $b
 
 set xlabel 'Rating Avg'
 set ylabel 'Cleanliness'
