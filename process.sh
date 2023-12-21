@@ -19,7 +19,7 @@ if [ ! -s "$gnuplot_data" ]; then
 fi
 
 # Perform linear regression and plot
-gnuplot -e "f(x) = a*x + b; fit f(x) '$gnuplot_data' via a, b; \
+gnuplot -e "f(x) = 1*x + b; fit f(x) '$gnuplot_data' via b; \
             set xlabel 'Overall Rating'; set ylabel 'Cleanliness'; \
             set title 'Linear Regression: Cleanliness vs Overall Rating'; \
             plot '$gnuplot_data' title 'Data', f(x) title 'Linear Regression' with lines; \
@@ -27,3 +27,4 @@ gnuplot -e "f(x) = a*x + b; fit f(x) '$gnuplot_data' via a, b; \
 
 # Remove temporary files
 rm "$gnuplot_data"
+
