@@ -18,7 +18,7 @@ echo "RATING_AVG $rating_avg"
 awk -F ',' 'NR>1 && $7!="N/A" {count[tolower($7)]++} END {for (country in count) print "HOTELNUMBER", country, count[country]}' "$1" | sort
 
 # Шаг 3: Средний балл cleanliness по стране для отелей сети Holiday Inn vs. отелей Hilton
-awk -F ',' 'NR>1 && $13!=-1 && $18!=-1 && $7!="N/A" {sum[$9 tolower($7)]+=$13; count[$9 tolower($7)]++} END {for (key in sum) print "CLEANLINESS", key, key in count ? sum[key]/count[key] : "N/A"}' "$1"
+awk -F ',' 'NR>1 && $13!=-1 && $18!=-1 && $7!="N/A" {sum[$9 tolower($7)]+=$13; count[$9 tolower($7)]++} END {for (key in sum) print "CLEANLINESS", key, key in count ? sum[key]/count[key] : "N/A"}' "$1" | sort
 
 # Шаг 4: Фильтрация данных для линейной регрессии и сохранение во временный файл
 awk -F ',' 'NR>1 && $13!=-1 && $18!=-1 {print $18, $13}' "$1" > "$temp_file"
@@ -37,8 +37,9 @@ set xlabel "Overall Rating"
 set ylabel "Cleanliness"
 set title "Линейная регрессия: Чистота vs. Общий рейтинг"
 set datafile separator ","
+f(x) = m*x + b
 plot "$temp_file" using 1:2 title "Точки данных" with points pointtype 7 pointsize 1.5, \
-     "$temp_file" using 1:2 smooth linear title "Линейная регрессия"
+     f(x) title "Линейная регрессия"
 EOL
 
 # Шаг 6: Расчет коэффициентов линейной регрессии
