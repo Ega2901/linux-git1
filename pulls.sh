@@ -1,93 +1,82 @@
 #!/bin/bash
 
-# Проверяем, что передан аргумент (ник пользователя на Github)
-if [ -z "$1" ]; then
-  echo "Usage: $0 <github_username>"
+# Проверяем, что передан один аргумент
+if [ "$#" -ne 1 ]; then
+  echo "Использование: $0 <ник_пользователя_на_GitHub>"
   exit 1
 fi
 
-# Задаем переменные
-USERNAME="$1"
-REPO="datamove/linux-git2"
-TOKEN_FILE="/home/Ega2901/public_repo_token"
-CACHE_DIR="/home/Ega2901/.github_api_cache"
+# Получаем аргумент (ник пользователя)
+user=$1
 
-# Проверяем наличие файла с токеном
-if [ ! -f "$TOKEN_FILE" ]; then
-  echo "Error: GitHub token file not found. Please create a file at $TOKEN_FILE with your GitHub token."
-  exit 1
-fi
+# Директория для кэширования ответов API
+cache_dir="/home/Ega2901/github_api_cache"
+mkdir -p "$cache_dir"
 
-# Создаем каталог для кэша, если его нет
-mkdir -p "$CACHE_DIR"
+# Функция для получения информации о пулл-реквестах из API GitHub
+function get_pulls_info() {
+  local page=$1
+  local cache_file="$cache_dir/pulls_info_page${page}.json"
 
-# Читаем токен из файла
-TOKEN=$(cat "$TOKEN_FILE")
-
-# Функция для выполнения запроса API с кэшированием
-api_request() {
-  local endpoint="$1"
-  local cache_file="$CACHE_DIR/$(echo -n "$endpoint" | md5sum | awk '{print $1}')"
-
-  # Проверяем, есть ли кэшированный результат
+  # Если ответ уже закэширован, используем его
   if [ -f "$cache_file" ]; then
     cat "$cache_file"
   else
-    # Выполняем запрос и кэшируем результат
-    curl -s -H "Authorization: token $TOKEN" "$endpoint" > "$cache_file"
+    # Запрашиваем информацию о пулл-реквестах
+    curl -s "https://api.github.com/repos/datamove/linux-git2/pulls?state=all&creator=$user&page=$page" > "$cache_file"
     cat "$cache_file"
   fi
 }
 
-# Функция для получения количества пулл-реквестов пользователя
-get_pulls_count() {
-  local page=1
-  local total_count=0
+# Инициализируем переменные
+total_pulls_count=0
+earliest_pull_number=""
+earliest_pull_merged=""
 
-  while true; do
-    response=$(api_request "https://api.github.com/repos/$REPO/pulls?state=all&creator=$USERNAME&page=$page")
-    count=$(echo "$response" | jq length)
+# Обрабатываем пулл-реквесты по страницам
+page=1
+while true; do
+  pulls_info=$(get_pulls_info "$page")
 
-    if [ "$count" -eq 0 ]; then
-      break
-    fi
+  # Проверяем, что пользователь существует
+  if [[ $(echo "$pulls_info" | jq '.message') == "Not Found" ]]; then
+    echo "Пользователь $user не найден на GitHub."
+    exit 1
+  fi
 
-    total_count=$((total_count + count))
-    page=$((page + 1))
-  done
+  # Получаем количество пулл-реквестов на текущей странице
+  page_pulls_count=$(echo "$pulls_info" | jq length)
 
-  echo "$total_count"
-}
+  # Прерываем цикл, если больше нет пулл-реквестов
+  if [ "$page_pulls_count" -eq 0 ]; then
+    break
+  fi
 
-# Функция для получения номера самого раннего (первого) пулл-реквеста пользователя
-get_earliest_pull_number() {
-  response=$(api_request "https://api.github.com/repos/$REPO/pulls?state=all&creator=$USERNAME&page=1")
-  echo "$response" | jq -r '.[0].number'
-}
+  # Обновляем общее количество пулл-реквестов
+  total_pulls_count=$((total_pulls_count + page_pulls_count))
 
-# Функция для проверки, был ли пулл-реквест смержен
-is_pull_merged() {
-  local pull_number="$1"
-  response=$(api_request "https://api.github.com/repos/$REPO/pulls/$pull_number")
-  echo "$response" | jq -r '.merged'
-}
+  # Поиск самого раннего пулл-реквеста
+  earliest_pull=$(echo "$pulls_info" | jq -r '.[0] | {number: .number, merged: .merged}')
 
-# Получаем количество пулл-реквестов пользователя
-PULLS=$(get_pulls_count)
+  # Обновляем информацию о самом раннем пулл-реквесте
+  if [ -z "$earliest_pull_number" ] || [ "${earliest_pull.number}" -lt "$earliest_pull_number" ]; then
+    earliest_pull_number="${earliest_pull.number}"
+    earliest_pull_merged="${earliest_pull.merged}"
+  fi
 
-# Если пулл-реквестов больше 0, обрабатываем их
-if [ "$PULLS" -gt 0 ]; then
-  # Получаем номер самого раннего (первого) пулл-реквеста пользователя
-  EARLIEST=$(get_earliest_pull_number)
+  # Увеличиваем счетчик страниц
+  page=$((page + 1))
+done
 
-  # Проверяем, был ли первый пулл-реквест смержен
-  MERGED=$(is_pull_merged "$EARLIEST")
+# Выводим количество пулл-реквестов
+echo "PULLS $total_pulls_count"
 
-  # Выводим результат
-  echo "PULLS $PULLS"
-  echo "EARLIEST $EARLIEST"
-  echo "MERGED $((MERGED == true))"
+# Выводим номер самого раннего пулл-реквеста
+echo "EARLIEST $earliest_pull_number"
+
+# Выводим бинарный флаг MERGED
+if [ "$earliest_pull_merged" == "true" ]; then
+  echo "MERGED 1"
 else
-  # Выводим результат, если пулл-реквестов нет
-  echo "PULLS 0"
+  echo "MERGED 0"
 fi
