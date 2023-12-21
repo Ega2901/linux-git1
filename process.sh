@@ -16,7 +16,13 @@ gnuplot_data=$(mktemp /tmp/gnuplot_data.XXXXXX)
 awk -F, 'NR > 1 && $17 != -1 { printf "%s %s\n", $17, $12 }' "$dataset" > "$gnuplot_data"
 
 # Вычисляем коэффициенты линейной регрессии
-regression_coefficients=$(gnuplot -e "f(x) = a*x + b; fit f(x) '$gnuplot_data' via a, b; print a, b")
+regression_coefficients=$(gnuplot -e "f(x) = a*x + b; fit f(x) '$gnuplot_data' via a, b; print a, b" 2>/dev/null)
+
+# Проверяем, успешно ли завершилась команда gnuplot
+if [ $? -ne 0 ]; then
+    echo "Ошибка при выполнении линейной регрессии. Пожалуйста, убедитесь, что у вас установлен gnuplot и повторите попытку."
+    exit 1
+fi
 
 # Извлекаем коэффициенты из вывода
 slope=$(echo "$regression_coefficients" | awk '{print $1}')
@@ -35,10 +41,7 @@ output_file=$(mktemp /tmp/linear_regression_plot.XXXXXX.png)
 # Запускаем gnuplot
 gnuplot -p "$gnuplot_script"
 
-# Удаляем временные файлы
-rm "$gnuplot_data" "$gnuplot_script"
-
 # Перемещаем график в /tmp
-mv "linear_regression_plot.png" "$output_file"
+mv "$output_file" "/tmp/linear_regression_plot.png"
 
-echo "График сохранен в файл: $output_file"
+echo "График сохранен в файл: /tmp/linear_regression_plot.png"
