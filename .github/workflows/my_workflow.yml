@@ -1,34 +1,56 @@
-name: Deploy Bot
+name: Deploy Docker image
 
 on:
+  workflow_dispatch:
   push:
     branches:
-      - main
+      - master
+
+# Сбор контейнера
+concurrency: build-and-push
+#Необходимо разрешение в настройках
+permissions:
+  contents: read
+  packages: write
+#Окружение
+env:
+  REGISTRY: ghcr.io
+  TAG_NAME: latest
+  # Кэш
+  CACHE_IMAGE_NAME: buildcache
 
 jobs:
-  deploy:
+  build:
+    timeout-minutes: 5
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+      
+      - name: Export lowercase image names
+        shell: bash
+        run: |
+        
+          # IMAGE_TAG=ghcr.io/user/repo:latest
+          : "${{ env.REGISTRY }}/${{ github.repository }}:${{ env.TAG_NAME }}"
+          echo "IMAGE_TAG=${_,,}" | tee -a $GITHUB_ENV
+        
+          # CACHE_TAG=ghcr.io/user/buildcache:repo
+          : "${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.CACHE_IMAGE_NAME }}:${GITHUB_REPOSITORY#*/}"
+          echo "CACHE_TAG=${_,,}" | tee -a $GITHUB_ENV
+      - name: Login to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v1
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v2
 
-    - name: Build Docker image
-      run: docker build -t ega2901_bot_image .
-
-    - name: Log in to Docker Hub (if you're using Docker Hub)
-      uses: docker/login-action@v1
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
-
-    - name: Push Docker image (if needed)
-      run: docker push ega2901_bot_image
-
-    - name: Redeploy Docker container
-      run: |
-        docker-compose down
-        docker-compose up -d
+      - name: Build and push
+        uses: docker/build-push-action@v3
+        with:
+          builder: ${{ ega2901bot }}
+          context: ./
+          file: ./docker/Dockerfile
