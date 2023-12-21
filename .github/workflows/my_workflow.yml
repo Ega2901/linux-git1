@@ -25,9 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Create symbolic link to Dockerfile
-        run: ln -s ./project2/DOCKERFILE Dockerfile
-        
+      
       - name: Export lowercase image names
         shell: bash
         run: |
@@ -53,8 +51,8 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           builder: ${{ steps.buildx.outputs.name }}
-          context: ./
-          file: ./docker/Dockerfile
+          context: ./project2
+          file: ./project2/docker/Dockerfile
           tags: ${{ env.IMAGE_TAG }}
           push: true
           cache-from: type=registry,ref=${{ env.CACHE_TAG }}
