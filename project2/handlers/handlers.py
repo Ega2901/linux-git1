@@ -28,8 +28,7 @@ async def myid(message: Message):
 @router.message(Command('mycal'))
 async def mycal(message: Message):
     cal = get_schedule_data()
-    await message.answer(f"Ваши ближайшие события:\n"
-                         f"{cal}")
+    await message.answer(f"Ваши ближайшие события:\n "f"{cal}")
 
 
 @router.poll()
