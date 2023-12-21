@@ -65,7 +65,15 @@ function get_merged_flag {
   fi
 }
 
+# Задержка между запросами
+function sleep_between_requests {
+  sleep 1
+}
+
 # Вывод результатов
 echo "PULLS $(get_pulls_count)"
 echo "EARLIEST $(get_earliest_pull)"
 echo "$(get_merged_flag)"
+
+# Передача кода завершения в чекер
+exit 0
