@@ -51,6 +51,10 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v3
         with:
-          builder: ${{ ega2901bot }}
+          builder: ${{ steps.buildx.outputs.name }}
           context: ./
           file: ./docker/Dockerfile
+          tags: ${{ env.IMAGE_TAG }}
+          push: true
+          cache-from: type=registry,ref=${{ env.CACHE_TAG }}
+          cache-to: type=registry,ref=${{ env.CACHE_TAG }},mode=max
