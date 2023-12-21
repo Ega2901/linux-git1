@@ -59,9 +59,9 @@ while true; do
   earliest_pull=$(echo "$pulls_info" | jq -r 'sort_by(.created_at) | .[0] | {number: .number, merged: .merged}')
 
   # Обновляем информацию о самом раннем пулл-реквесте
-  if [ -n "${earliest_pull.number}" ]; then
-    earliest_pull_number="${earliest_pull.number}"
-    earliest_pull_merged="${earliest_pull.merged}"
+  if [ -n "$earliest_pull" ]; then
+    earliest_pull_number=$(echo "$earliest_pull" | jq -r '.number')
+    earliest_pull_merged=$(echo "$earliest_pull" | jq -r '.merged')
   fi
 
   # Увеличиваем счетчик страниц
