@@ -15,15 +15,15 @@ output_file="/tmp/regression_plot.png"
 
 # Task 1: Average rating (overall_ratingsource)
 rating_avg=$(awk -F',' '{ if ($17 != -1) { sum += $17; count++ } } END { if (count > 0) print "RATING_AVG " sum/count }' $dataset_file)
-echo $rating_avg
+echo "Task 1: $rating_avg"
 
 # Task 2: Number of hotels in each country
 hotels_by_country=$(awk -F',' '{ if ($1 != -1) { country=tolower($7); count[country]++ } } END { for (c in count) print "HOTELNUMBER " c " " count[c] }' $dataset_file)
-echo "$hotels_by_country"
+echo "Task 2: $hotels_by_country"
 
 # Task 3: Average cleanliness score per country for Holiday Inn vs. Hilton
 cleanliness_avg=$(awk -F',' '{ if ($1 != -1 && $12 != -1 && $12 != 0) { country=tolower($7); cleanliness=$12; hotel_network=tolower($2); sum[country, hotel_network] += cleanliness; count[country, hotel_network]++ } } END { for (c in count) { split(c, arr, SUBSEP); country = arr[1]; network = arr[2]; avg = sum[c] / count[c]; if (count[country, "holiday inn"] > 0 && count[country, "hilton"] > 0) print "CLEANLINESS " country " " avg " " count[country, "holiday inn"] " " count[country, "hilton"]; } }' $dataset_file)
-echo "$cleanliness_avg"
+echo "Task 3: $cleanliness_avg"
 
 # Task 4: Use gnuplot to calculate linear regression coefficients for cleanliness vs overall_ratingsource
 awk -F',' '{ if ($12 != -1 && $17 != -1) print $12, $17 }' $dataset_file > $tmp_data_file
