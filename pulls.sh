@@ -11,15 +11,30 @@ user=$1
 repo="datamove/linux-git2"
 api_url="https://api.github.com/repos/$repo/pulls"
 token_file="/home/Ega2901/public_repo_token"
+cache_dir="$HOME/.github_api_cache"
+cache_file_pulls="$cache_dir/pulls_cache.json"
+cache_file_earliest="$cache_dir/earliest_cache.json"
+cache_file_merged="$cache_dir/merged_cache.json"
 
-# Функция для выполнения запроса к Github API
+# Создать каталог для кэша, если его нет
+mkdir -p "$cache_dir"
+
+# Функция для выполнения запроса к Github API и кэширования результата
 function github_api_request {
   local url=$1
   local token=$2
-  if [ -z "$token" ]; then
-    curl -s "$url" | jq .
+  local cache_file=$3
+
+  # Проверяем, есть ли кэш и он не устарел (например, не старше 1 часа)
+  if [ -f "$cache_file" ] && [ $(find "$cache_file" -mmin +60) ]; then
+    cat "$cache_file"
   else
-    curl -s -H "Authorization: token $token" "$url" | jq .
+    if [ -z "$token" ]; then
+      curl -s "$url" > "$cache_file"
+    else
+      curl -s -H "Authorization: token $token" "$url" > "$cache_file"
+    fi
+    cat "$cache_file"
   fi
 }
 
@@ -27,28 +42,21 @@ function github_api_request {
 function get_pulls_count {
   local url="$api_url?state=all&per_page=100"
   local token=$(cat "$token_file" 2>/dev/null)
-  local count=$(github_api_request "$url" "$token" | jq length)
-  echo "$count"
+  github_api_request "$url" "$token" "$cache_file_pulls" | jq length
 }
 
 # Функция для получения информации о самом раннем пулл-реквесте
 function get_earliest_pull {
   local url="$api_url?state=all&per_page=1"
   local token=$(cat "$token_file" 2>/dev/null)
-  local earliest=$(github_api_request "$url" "$token" | jq '.[0].number // empty')
-  echo "$earliest"
+  github_api_request "$url" "$token" "$cache_file_earliest" | jq '.[0].number // empty'
 }
 
 # Функция для определения флага MERGED
 function get_merged_flag {
   local url="$api_url?state=all&per_page=1"
   local token=$(cat "$token_file" 2>/dev/null)
-  local merged=$(github_api_request "$url" "$token" | jq '.[0].merged // false')
-  if [ "$merged" == "true" ]; then
-    echo "MERGED 1"
-  else
-    echo "MERGED 0"
-  fi
+  github_api_request "$url" "$token" "$cache_file_merged" | jq -r '.[0].merged // false' | awk '{print "MERGED", $1 ? 1 : 0}'
 }
 
 # Вывод результатов
