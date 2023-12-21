@@ -18,7 +18,7 @@ echo "RATING_AVG $rating_avg"
 awk -F ',' 'NR>1 && $7!="N/A" {count[tolower($7)]++} END {for (country in count) print "HOTELNUMBER", country, count[country]}' "$1" | sort
 
 # Шаг 3: Средний балл cleanliness по стране для отелей сети Holiday Inn vs. отелей Hilton
-awk -F ',' 'NR>1 && $13!=-1 && $18!=-1 && $7!="N/A" {sum[$9 tolower($7)]+=$13; count[$9 tolower($7)]++} END {for (key in sum) print "CLEANLINESS", key, key in count ? sum[key]/count[key] : "N/A"}' "$1" | sort
+awk -F ',' 'NR>1 && $13!=-1 && $18!=-1 && $7!="N/A" {sum[$9 tolower($7)]+=$13; count[$9 tolower($7)]++} END {for (key in count) print "CLEANLINESS", key, key in sum ? sum[key]/count[key] : "N/A"}' "$1" | sort
 
 # Шаг 4: Фильтрация данных для линейной регрессии и сохранение во временный файл
 awk -F ',' 'NR>1 && $13!=-1 && $18!=-1 {print $18, $13}' "$1" > "$temp_file"
@@ -38,12 +38,17 @@ set ylabel "Cleanliness"
 set title "Линейная регрессия: Чистота vs. Общий рейтинг"
 set datafile separator ","
 f(x) = m*x + b
+fit f(x) '$temp_file' using 1:2 via m, b
 plot "$temp_file" using 1:2 title "Точки данных" with points pointtype 7 pointsize 1.5, \
      f(x) title "Линейная регрессия"
 EOL
 
+
 # Шаг 6: Расчет коэффициентов линейной регрессии
 gnuplot -e "fit f(x) '$temp_file' using 1:2 via m, b" > /dev/null
+# Проверка коэффициентов линейной регрессии
+grep 'slope' fit.log
+grep 'intercept' fit.log
 
 # Шаг 7: Вывод коэффициентов линейной регрессии
 m=$(grep 'slope' fit.log | awk '{print $3}')
