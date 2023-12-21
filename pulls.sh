@@ -41,18 +41,35 @@ api_request() {
 
 # Функция для получения количества пулл-реквестов пользователя
 get_pulls_count() {
-  api_request "https://api.github.com/repos/$REPO/pulls?state=all&creator=$USERNAME" | jq length
+  local page=1
+  local total_count=0
+
+  while true; do
+    response=$(api_request "https://api.github.com/repos/$REPO/pulls?state=all&creator=$USERNAME&page=$page")
+    count=$(echo "$response" | jq length)
+
+    if [ "$count" -eq 0 ]; then
+      break
+    fi
+
+    total_count=$((total_count + count))
+    page=$((page + 1))
+  done
+
+  echo "$total_count"
 }
 
 # Функция для получения номера самого раннего (первого) пулл-реквеста пользователя
 get_earliest_pull_number() {
-  api_request "https://api.github.com/repos/$REPO/pulls?state=all&creator=$USERNAME" | jq -r '.[0].number'
+  response=$(api_request "https://api.github.com/repos/$REPO/pulls?state=all&creator=$USERNAME&page=1")
+  echo "$response" | jq -r '.[0].number'
 }
 
 # Функция для проверки, был ли пулл-реквест смержен
 is_pull_merged() {
   local pull_number="$1"
-  api_request "https://api.github.com/repos/$REPO/pulls/$pull_number" | jq -r '.merged'
+  response=$(api_request "https://api.github.com/repos/$REPO/pulls/$pull_number")
+  echo "$response" | jq -r '.merged'
 }
 
 # Получаем количество пулл-реквестов пользователя
