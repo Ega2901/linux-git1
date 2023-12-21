@@ -29,6 +29,7 @@ if [ ! -s "$temp_file" ]; then
     exit 1
 fi
 
+
 # Шаг 5: Запись скрипта gnuplot
 cat > "$gnuplot_script" <<EOL
 set term png
