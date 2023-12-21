@@ -40,21 +40,21 @@ function github_api_request {
 
 # Функция для получения числа пулл-реквестов
 function get_pulls_count {
-  local url="$api_url?state=all&per_page=100"
+  local url="$api_url?state=all&per_page=100&user=$user"
   local token=$(cat "$token_file" 2>/dev/null)
   github_api_request "$url" "$token" "$cache_file_pulls" | jq length
 }
 
 # Функция для получения информации о самом раннем пулл-реквесте
 function get_earliest_pull {
-  local url="$api_url?state=all&per_page=1"
+  local url="$api_url?state=all&per_page=1&user=$user"
   local token=$(cat "$token_file" 2>/dev/null)
   github_api_request "$url" "$token" "$cache_file_earliest" | jq '.[0].number // empty'
 }
 
 # Функция для определения флага MERGED
 function get_merged_flag {
-  local url="$api_url?state=all&per_page=1"
+  local url="$api_url?state=all&per_page=1&user=$user"
   local token=$(cat "$token_file" 2>/dev/null)
   github_api_request "$url" "$token" "$cache_file_merged" | jq -r '.[0].merged // false' | awk '{print "MERGED", $1 ? 1 : 0}'
 }
