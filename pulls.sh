@@ -39,7 +39,7 @@ while true; do
   pulls_info=$(get_pulls_info "$page")
 
   # Проверяем, что пользователь существует
-  if [[ $(echo "$pulls_info" | jq '.message') == "Not Found" ]]; then
+  if [ "$(echo "$pulls_info" | jq '. | length')" -eq 0 ]; then
     echo "Пользователь $user не найден на GitHub."
     exit 1
   fi
@@ -56,10 +56,10 @@ while true; do
   total_pulls_count=$((total_pulls_count + page_pulls_count))
 
   # Поиск самого раннего пулл-реквеста на текущей странице
-  earliest_pull=$(echo "$pulls_info" | jq -r '.[0] | {number: .number, merged: .merged}')
+  earliest_pull=$(echo "$pulls_info" | jq -r 'if length > 0 then .[0] | {number: .number, merged: .merged} else {} end')
 
   # Обновляем информацию о самом раннем пулл-реквесте
-  if [ -z "$earliest_pull_number" ] || [ -n "${earliest_pull.number}" ] && [ "${earliest_pull.number}" -lt "$earliest_pull_number" ]; then
+  if [ -n "${earliest_pull.number}" ] && ([ -z "$earliest_pull_number" ] || [ "${earliest_pull.number}" -lt "$earliest_pull_number" ]); then
     earliest_pull_number="${earliest_pull.number}"
     earliest_pull_merged="${earliest_pull.merged}"
   fi
