@@ -25,5 +25,11 @@ services:
       volumes:
           - /var/run/docker.sock:/var/run/docker.sock
           - /root/.docker/config.json:/config.json
-      
+
+version: "3.7"
+services:
+    homepage:
+        image: ghcr.io/fabiancdng/fabiancdng-homepage:latest
+        container_name: homepage
+        restart: unless-stopped
     
