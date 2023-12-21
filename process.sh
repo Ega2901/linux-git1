@@ -1,26 +1,21 @@
 #!/bin/bash
 
-# Проверяем наличие аргумента (пути к файлу с датасетом)
-if [ -z "$1" ]; then
-    echo "Usage: $0 <dataset_file>"
-    exit 1
-fi
-
-# Переменные для временных файлов
+# Шаг 1: Создание временного файла для данных линейной регрессии
 temp_file="/tmp/temp_data.txt"
+
+# Шаг 2: Формирование скрипта gnuplot
 gnuplot_script="/tmp/gnuplot_script.gp"
 
-# Шаг 1: Вычисление среднего рейтинга (overall_ratingsource)
-rating_avg=$(awk -F ',' 'NR>1 && $18!=-1 {sum+=$18; count++} END {if (count>0) print sum/count; else print "N/A"}' "$1")
-echo "RATING_AVG $rating_avg"
+# Шаг 3: Вычисление среднего рейтинга
+awk -F ',' 'NR>1 && $18!=-1 {sum+=$18; count++} END {if (count>0) print "RATING_AVG", sum/count; else print "RATING_AVG", "N/A"}' "$1"
 
-# Шаг 2: Число отелей в каждой стране
-awk -F ',' 'NR>1 && $7!="N/A" {count[tolower($7)]++} END {for (country in count) print "HOTELNUMBER", country, count[country]}' "$1" | sort
+# Шаг 4: Вычленение страны из поля doc_id и подсчет количества отелей в каждой стране
+awk -F ',' 'NR>1 {split($1, parts, "_"); country=tolower(parts[1]); hotel_count[country]++} END {for (c in hotel_count) print "HOTELNUMBER", c, hotel_count[c]}' "$1"
 
-# Шаг 3: Средний балл cleanliness по стране для отелей сети Holiday Inn vs. отелей Hilton
-awk -F ',' 'NR>1 && $13!=-1 && $18!=-1 && $7!="N/A" {sum[$9 tolower($7)]+=$13; count[$9 tolower($7)]++} END {for (key in count) print "CLEANLINESS", key, key in sum ? sum[key]/count[key] : "N/A"}' "$1" | sort
+# Шаг 5: Вычисление среднего балла cleanliness по стране для отелей Holiday Inn и Hilton
+awk -F ',' 'NR>1 && $13!=-1 {split($1, parts, "_"); country=tolower(parts[1]); if (country == "holidayinn" || country == "hilton") {sum[country]+=$13; count[country]++}} END {for (c in sum) if (count[c]>0) print "CLEANLINESS", c, sum[c]/count[c]}' "$1"
 
-# Шаг 4: Фильтрация данных для линейной регрессии и сохранение во временный файл
+# Шаг 6: Фильтрация данных для линейной регрессии и сохранение во временный файл
 awk -F ',' 'NR>1 && $13!=-1 && $18!=-1 {print $18, $13}' "$1" > "$temp_file"
 
 # Проверка, что временный файл содержит данные
@@ -29,8 +24,7 @@ if [ ! -s "$temp_file" ]; then
     exit 1
 fi
 
-
-# Шаг 5: Запись скрипта gnuplot
+# Шаг 7: Запись скрипта gnuplot
 cat > "$gnuplot_script" <<EOL
 set term png
 set output "/tmp/linear_regression_plot.png"
@@ -44,22 +38,5 @@ plot "$temp_file" using 1:2 title "Точки данных" with points pointtyp
      f(x) title "Линейная регрессия"
 EOL
 
-
-# Шаг 6: Расчет коэффициентов линейной регрессии
-gnuplot -e "fit f(x) '$temp_file' using 1:2 via m, b" > /dev/null
-# Проверка коэффициентов линейной регрессии
-grep 'slope' fit.log
-grep 'intercept' fit.log
-
-# Шаг 7: Вывод коэффициентов линейной регрессии
-m=$(grep 'slope' fit.log | awk '{print $3}')
-b=$(grep 'intercept' fit.log | awk '{print $3}')
-echo "Linear Regression Coefficients:"
-echo "Slope (m): $m"
-echo "Intercept (b): $b"
-
-# Шаг 8: Запуск gnuplot
+# Запуск gnuplot
 gnuplot "$gnuplot_script"
-
-# Очистка временных файлов
-rm "$temp_file" "$gnuplot_script" fit.log
